@@ -6,6 +6,8 @@ from geometry_msgs.msg import Pose
 from time import sleep
 import math
 
+#Este compare solo servira para enviar mensaje y luego recibir y luego enviar y luego recibir y asi..
+#Esto que sea el puntapie para luego en la pt 3 meterle weno con la construccion del mapa
 
 class Client(Node):
     def __init__(self, name):

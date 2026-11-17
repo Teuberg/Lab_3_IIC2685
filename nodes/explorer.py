@@ -6,6 +6,8 @@ from geometry_msgs.msg import Pose
 from time import sleep
 import math
 
+#Idea: que aqui el compare tome las decisiones fuertes basadas en las lecturas del lidar
+
 
 class Robot(Node):
     def __init__(self, name):

@@ -15,7 +15,9 @@ install(PROGRAMS
   #Parte 1: Exploracion
   nodes/explorer.py
   nodes/client.py
-  
+  nodes/robot.py
+  nodes/controller.py
+
   #Parte 2: Sensor model
 
 

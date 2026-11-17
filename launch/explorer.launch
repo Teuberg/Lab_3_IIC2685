@@ -6,4 +6,6 @@
 
   <node pkg="lab3" exec="client.py" name="client" output="screen" />
   <node pkg="lab3" exec="explorer.py" name="explorerRobot" output="screen" />
+  <node pkg="lab3" exec="controller.py" name="robotController" output="screen" />
+  <node pkg="lab3" exec="robot.py" name="robotMovements" output="screen" />
 </launch>
