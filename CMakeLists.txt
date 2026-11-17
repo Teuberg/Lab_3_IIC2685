@@ -11,6 +11,20 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
+install(PROGRAMS
+  #Parte 1: Exploracion
+  nodes/explorer.py
+  nodes/client.py
+  
+  #Parte 2: Sensor model
+
+
+  #Parte 3: Todo juntito
+
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
 install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
