@@ -12,6 +12,7 @@ import random
 #Parametros de alineacion
 STEP = 0.20                       
 SAFE_RADIUS = 0.30               
+ROBOT_RADIUS = 0.23
 MIN_ADVANCE = 0.05                
 FOV_HALF_DEG = 28                 
 SIDE_FROM_DEG = 10                
@@ -98,6 +99,14 @@ class ExplorerBot(Node):
         vals = [r for r in scan.ranges[i0:i1 + 1] if self.valid(scan, r)]
         return min(vals) if vals else scan.range_max
  
+    def path_min(self, scan):
+        vals = []
+        for i, r in enumerate(scan.ranges):
+            a = scan.angle_min + i * scan.angle_increment
+            if abs(a) <= math.radians(FOV_HALF_DEG) and self.valid(scan, r) and abs(r * math.sin(a)) < ROBOT_RADIUS:
+                vals.append(r * math.cos(a))
+        return min(vals) if vals else scan.range_max
+ 
     def estimate_wall_angle(self, scan, deg=WALL_RAY_DEG):
         r1 = scan.ranges[self.angle_to_index(scan, -deg)]
         r2 = scan.ranges[self.angle_to_index(scan, deg)]
@@ -106,11 +115,14 @@ class ExplorerBot(Node):
         a = math.radians(deg)
         x1, y1 = r1 * math.cos(-a), r1 * math.sin(-a)
         x2, y2 = r2 * math.cos(a), r2 * math.sin(a)
+        r0 = scan.ranges[self.angle_to_index(scan, 0)]
+        if not self.valid(scan, r0) or abs(r0 - (x1 - y1 * (x2 - x1) / (y2 - y1))) > 0.05:
+            return None
         return math.atan2(-(x2 - x1), y2 - y1)
  
     def update_readings(self):
         scan = self.current_scan
-        self.front = self.sector_min(scan, -FOV_HALF_DEG, FOV_HALF_DEG)
+        self.front = self.path_min(scan)
         self.left = self.sector_min(scan, SIDE_FROM_DEG, FOV_HALF_DEG)
         self.right = self.sector_min(scan, -FOV_HALF_DEG, -SIDE_FROM_DEG)
         self.wall_angle = self.estimate_wall_angle(scan)
