@@ -64,7 +64,7 @@ def main():
     client = Client("Don_client")
     client.check_connections()
 
-    while(client.world_ready < 1):
+    while(client.world_ready < 2):
         client.get_logger().info("Esperando mapa...")
         rclpy.spin_once(client, timeout_sec=1.0)
     Thread(target=client.auto_explorer, daemon=True).start()

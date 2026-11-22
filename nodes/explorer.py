@@ -18,8 +18,9 @@ FOV_HALF_DEG = 28
 SIDE_FROM_DEG = 10                
 WALL_RAY_DEG = 20                 
 ALIGN_TOL = math.radians(6)       
-ALIGN_MAX = math.radians(30)      
+ALIGN_MAX = math.radians(45)      
 TURN_BIAS = 0.7                  
+EXPLORE_TURN_PROB = 0.1
 
 
 class ExplorerBot(Node):
@@ -144,6 +145,8 @@ class ExplorerBot(Node):
     def decide_action(self) -> Pose:
         #Camino libre
         if self.front > STEP + SAFE_RADIUS:
+            if random.random() < EXPLORE_TURN_PROB:
+                return self.make_pose(yaw=(1 if self.left > self.right else -1) * math.pi / 2)
             return self.make_pose(x=STEP)
  
         #Pared cerca pero chueca
@@ -155,8 +158,12 @@ class ExplorerBot(Node):
             return self.make_pose(x=self.front - SAFE_RADIUS)
  
         #Bloqueado -> girar random
-        better = 1 if self.left > self.right else -1
-        sign = better if random.random() < TURN_BIAS else -better
+        last_yaw = 2 * math.atan2(self.last_move.orientation.z, self.last_move.orientation.w)
+        if abs(abs(last_yaw) - math.pi / 2) < 1e-3:
+            sign = 1 if last_yaw > 0 else -1
+        else:
+            better = 1 if self.left > self.right else -1
+            sign = better if random.random() < TURN_BIAS else -better
         return self.make_pose(yaw=sign * math.pi / 2)
  
 
