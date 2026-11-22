@@ -5,11 +5,12 @@ from std_msgs.msg import Empty
 from geometry_msgs.msg import Pose
 from time import sleep
 from threading import Thread
+from nav_msgs.msg import OccupancyGrid
 
 #Este compare solo servira para enviar mensaje y luego recibir y luego enviar y luego recibir y asi..
 #Esto que sea el puntapie para luego en la pt 3 meterle weno con la construccion del mapa
 
-EXPLORER_CHECK_RATE = 3
+EXPLORER_CHECK_RATE = 2
 
 class Client(Node):
     def __init__(self, name):
@@ -17,11 +18,12 @@ class Client(Node):
         self.name = name
 
         self.ready_to_explore = True
+        self.world_ready = 0
         self.displacement_list = []
 
-        self.explorer_pub = self.create_publisher(Empty, "/explorer", 1)
+        self.explorer_pub = self.create_publisher(Empty, "/explore", 1)
         self.displacement_sub = self.create_subscription(Pose, "/displacement", self.displacement_cb, 1)
-        Thread(target=self.auto_explorer, daemon=True).start()
+        self.world_sub = self.create_subscription(OccupancyGrid, "/world_map", self.world_cb, 1)
         
     def check_connections(self):
         while rclpy.ok():
@@ -33,10 +35,17 @@ class Client(Node):
 
         self.get_logger().info(f"[{self.name}] Inicializando Client explorador :p")
 
+    #===========================
+    #Callbacks
+    def world_cb(self, msg):
+        self.world_ready += 1
+
     def displacement_cb(self, msg):
-        self.displacement_list.append(msg.data)
+        self.displacement_list.append(msg)
         self.ready_to_explore = True
 
+    #===========================
+    #Funciones
 
     def auto_explorer(self):
         while(True):
@@ -54,6 +63,11 @@ def main():
     rclpy.init()
     client = Client("Don_client")
     client.check_connections()
+
+    while(client.world_ready < 1):
+        client.get_logger().info("Esperando mapa...")
+        rclpy.spin_once(client, timeout_sec=1.0)
+    Thread(target=client.auto_explorer, daemon=True).start()
 
     try:
        rclpy.spin(client)

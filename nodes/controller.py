@@ -55,9 +55,6 @@ class PIDController( Node ):
 
 
   def setpoint_cb(self, msg):
-      if self.setpoint == msg.data:
-          return
-      
       if(msg.data == INFTY):
         self.get_logger().info(f"[{self.name}] Quedandose quietito :p")
       else:
@@ -143,6 +140,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
-
-

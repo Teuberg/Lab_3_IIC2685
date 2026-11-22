@@ -4,7 +4,8 @@ from time import sleep
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseArray, Vector3, Pose
-from std_msgs.msg import String, Float64
+from std_msgs.msg import String, Float64, Empty
+from nav_msgs.msg import Odometry
 from math import atan2, sqrt
 from threading import Thread
 
@@ -25,7 +26,7 @@ class Robot(Node):
         self.pos_actual = [0.0, 0.0, 0.0]
         self.wait_time = 0.1
 
-        self.real_pose = self.create_subscription(Pose, "/real_pose", self.real_cb, 10)
+        self.real_pose = self.create_subscription(Odometry, "/odom", self.real_cb, 10)
         self.vel_effort_queue = []
         self.angle_effort_queue = []
 
@@ -45,14 +46,17 @@ class Robot(Node):
         self.angle_actuation = self.create_subscription(Float64, "/angle_effort", self.angle_cb, 1)
 
         self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.goal_list_sub = self.create_subscription(Pose, "/goal_list", self.accion_mover, 10)
+        self.orders_sub = self.create_subscription(Pose, "/move", self.order_cb, 10)
+        self.ready_pub = self.create_publisher(Empty, "/movement_ready", 1)
 
+    #===========================
+    #Callbacks
 
     def real_cb(self, msg):
-        self.pos_actual[0] = msg.position.x
-        self.pos_actual[1] = msg.position.y
-        self.pos_actual[2] = normalizar_angulo(2*math.atan2(msg.orientation.z, msg.orientation.w))
-        self.get_logger().info(f"Estoy en {self.pos_actual}", throttle_duration_sec=1.0)
+        self.pos_actual[0] = msg.pose.pose.position.x
+        self.pos_actual[1] = msg.pose.pose.position.y
+        self.pos_actual[2] = normalizar_angulo(2*math.atan2(msg.pose.pose.orientation.z, msg.pose.pose.orientation.w))
+        # self.get_logger().info(f"Estoy en {self.pos_actual}", throttle_duration_sec=1.0)
 
     def vel_cb(self, msg):
         self.vel_effort_queue.append(msg.data)
@@ -67,6 +71,24 @@ class Robot(Node):
         self.current_vel_act = 0.0
         self.current_angle_act = 0.0
 
+    def order_cb(self, msg):
+        self.get_logger().info(f"[{self.name}] Instruccion recibida -> ({msg})")
+
+        def moverse():
+            yaw = 2*math.atan2(msg.orientation.z, msg.orientation.w)
+            if abs(yaw) > ANGLE_EPSILON:
+                self.aplicar_controlador_angulo(normalizar_angulo(self.pos_actual[2] + yaw))
+            elif abs(msg.position.x) > POSE_EPSILON:
+                self.aplicar_controlador_vel(msg.position.x)
+            self.detener()
+            sleep(0.1)
+            self.ready_pub.publish(Empty())
+
+        thread_movimiento = Thread(target=moverse, daemon=True)
+        thread_movimiento.start()
+
+    #===========================
+    #Funciones
 
     def aplicar_controlador_vel(self, distancia):
         self.vel_effort_queue.clear()
@@ -145,10 +167,6 @@ class Robot(Node):
         for lin, rot in displacement_list:
             self.get_logger().info(f"Desplazamiento: ({lin:.3f}, {rot:.3f})")
  
-            while self.hay_obstaculo:
-                self.detener()
-                sleep(self.wait_time)
- 
             if rot != 0.0:
                 theta_obj = normalizar_angulo(theta_obj + rot)
                 self.get_logger().info(f"Girando a {theta_obj:.3f}...")
@@ -210,31 +228,15 @@ class Robot(Node):
 
         self.aplicar_velocidad(displacement_list)
         self.get_logger().info('Creo que llegue a (%f, %f, %f)...' % (x_goal, y_goal, angle_goal))
-        sleep(2)
+        sleep(0.1)
         
-
-    def accion_mover(self, msg):
-        self.get_logger().info(f'Instruccion recibida :D')
-
-        def moverse():
-            pos_x = msg.position.x
-            pos_y = msg.position.y
-            yaw = 2*math.atan2(msg.orientation.z, msg.orientation.w)
-            goal_pose = (pos_x, pos_y, yaw)
-            self.mover_robot_a_destino(goal_pose)
-            sleep(2)
-
-        thread_movimiento = Thread(target=moverse, daemon=True)
-        thread_movimiento.start()
-
-
 
 def main():
     rclpy.init()
-    robot = Robot("Acciones Bot")
+    robot = Robot("Robot")
 
     try:
-       robot.spin()
+       rclpy.spin(robot)
     except KeyboardInterrupt:
         pass
     finally:
