@@ -1,6 +1,18 @@
 <launch>
-  <include file="$(find-pkg-share very_simple_robot_simulator)/launch/minimal_simulator_py.xml" />
-  <include file="$(find-pkg-share very_simple_robot_simulator)/launch/world_state.xml" />
+  <!-- <include file="$(find-pkg-share very_simple_robot_simulator)/launch/minimal_simulator_py.xml" /> -->
+
+  <node pkg="very_simple_robot_simulator" name="kobuki_simulator" exec="kobuki_simulator.py" output="screen" >
+    <param name="initial_x" value="0.5" />
+    <param name="initial_y" value="0.5" />
+    <param name="initial_yaw" value="0.0" />
+  </node>
+  
+  <!-- <include file="$(find-pkg-share very_simple_robot_simulator)/launch/world_state.xml" /> -->
+  <node pkg="very_simple_robot_simulator" name="world_state_gui" exec="world_state_gui.py" output="screen" >
+    <param name="map_file" value="src/lab3/config/mapa.yaml" />
+  </node>
+
+
   <include file="$(find-pkg-share very_simple_robot_simulator)/launch/lidar_simulator.xml" />
 
   <node pkg="lab3" exec="client.py" name="client" output="screen" />
@@ -8,3 +20,4 @@
   <node pkg="lab3" exec="controller.py" name="robotController" output="screen" />
   <node pkg="lab3" exec="robot.py" name="robotMovements" output="screen" />
 </launch>
+

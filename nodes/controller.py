@@ -104,7 +104,7 @@ class PIDController( Node ):
     msg = Float64()
     msg.data = actuation
     self.actuation_pub.publish(msg)
-    self.get_logger().info(f"[{self.name}] [Pose: {self.state} | Setpoint: {self.setpoint} | Error: {error}] | PID: {msg.data}")
+    # self.get_logger().info(f"[{self.name}] [Pose: {self.state} | Setpoint: {self.setpoint} | Error: {error}] | PID: {msg.data}")
 
 
   def reset(self):

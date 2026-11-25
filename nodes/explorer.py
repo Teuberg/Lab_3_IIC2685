@@ -10,10 +10,10 @@ import random
 
 #===========================
 #Parametros de alineacion
-STEP = 0.20                       
+STEP = 1.0                       
 SAFE_RADIUS = 0.30               
 ROBOT_RADIUS = 0.23
-MIN_ADVANCE = 0.05                
+MIN_ADVANCE = 0.20                
 FOV_HALF_DEG = 28                 
 SIDE_FROM_DEG = 10                
 WALL_RAY_DEG = 20                 
@@ -31,6 +31,7 @@ class ExplorerBot(Node):
         self.action_in_progress = False
         self.current_scan = LaserScan()
         self.last_move = Pose()
+
 
         #Lecturas lidar
         self.front = 0.0
@@ -145,19 +146,24 @@ class ExplorerBot(Node):
     def decide_action(self) -> Pose:
         #Camino libre
         if self.front > STEP + SAFE_RADIUS:
-            if random.random() < EXPLORE_TURN_PROB:
-                return self.make_pose(yaw=(1 if self.left > self.right else -1) * math.pi / 2)
+            self.get_logger().info("Camino libre, pa lante")
+            if (random.randrange(100) < 100*EXPLORE_TURN_PROB) and (self.left > STEP + SAFE_RADIUS or self.right > STEP + SAFE_RADIUS):
+                self.get_logger().info(f"Vibe check girando con dir {-1 if self.left > self.right else 1}")
+                return self.make_pose(yaw=(-1 if self.left > self.right else 1) * math.pi / 2)
             return self.make_pose(x=STEP)
  
         #Pared cerca pero chueca
         if self.wall_angle is not None and ALIGN_TOL < abs(self.wall_angle) < ALIGN_MAX:
+            self.get_logger().info("Alineandose con el muro")
             return self.make_pose(yaw=self.wall_angle)
  
         #Acercarse al murito
         if self.front - SAFE_RADIUS > MIN_ADVANCE:
+            self.get_logger().info("Acercandose al murito")
             return self.make_pose(x=self.front - SAFE_RADIUS)
  
         #Bloqueado -> girar random
+        self.get_logger().info("Camino bloqueado, girando de pana")
         last_yaw = 2 * math.atan2(self.last_move.orientation.z, self.last_move.orientation.w)
         if abs(abs(last_yaw) - math.pi / 2) < 1e-3:
             sign = 1 if last_yaw > 0 else -1
